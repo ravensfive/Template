@@ -5,7 +5,7 @@ from zipfile import ZipFile
 
 # delete zip from drive
 def deletezip():
-    os.remove("template.zip")
+    os.remove("twtd.zip")
     print("Zip File Deleted")
 
 #deletezip()
@@ -13,7 +13,7 @@ def deletezip():
 # zip up file into a zip archive, ready for Lambda Upload
 def zipfile(file):
   
-   zipf = ZipFile("template.zip","a")
+   zipf = ZipFile("twtd.zip","a")
    zipf.write(file)
 
    zipf.close()

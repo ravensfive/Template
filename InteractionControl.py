@@ -1,11 +1,12 @@
 # main python program
-import json, re, random
+import json, re, random, urllib3, requests
+from bs4 import BeautifulSoup
 
 # lambda function handler - including specific reference to our skill
 def lambda_handler(event, context):
     # if skill ID does not match my ID then raise error
     if (event["session"]["application"]["applicationId"] !=
-            "amzn1.ask.skill.32109323-a7d4-4018-b21e-13f46c4223b5"):
+            "amzn1.ask.skill.c4f72dcb-b8ae-451d-b3a7-cbc8c2f507b4"):
         raise ValueError("Invalid Application ID")
 
     # test if session is new
@@ -33,13 +34,13 @@ def on_intent(intent_request, session):
     intent = intent_request["intent"]
     intent_name = intent_request["intent"]["name"]
 
-    if intent_name == "HelloWorld":
-        return hello_world()
+    if intent_name == "PlayNews":
+        return play_news()
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
         return handle_session_end_request()
-    elif intent_name == "AMAZON.FallbackIntent"
+    elif intent_name == "AMAZON.FallbackIntent":
         return fall_back_reponse()
     else:
         raise ValueError("Invalid intent")
@@ -62,8 +63,8 @@ def get_welcome_response():
     session_attributes = {}    
     # set default value for numPoints
     card_title = "Welcome"
-    speech_output = "Welcome"
-    reprompt_text = "Welcome"
+    speech_output = "Welcome to the unofficial Ipswich Town news site, just say what's new to hear the most recent news story"
+    reprompt_text = "Welcome to the unofficial Ipswich Town news site, just say what's new to hear the most recent news story"
     should_end_session = False
     speech_output = "<speak>" + speech_output + "</speak>"
     card_output = cleanssml(speech_output)
@@ -84,11 +85,14 @@ def fall_back_reponse():
         card_title, speech_output, card_output, reprompt_text, should_end_session))
 
 # define welcome intent
-def hello_world():
+def play_news():
     session_attributes = {}
-    # set default value for numPoints
+    
+    # call web call function
+    speech_output = webcall()
+
     card_title = "Hello World"
-    speech_output = "Hello World"
+    #speech_output = "Hello World"
     reprompt_text = "Hello World"
     should_end_session = False
     speech_output = "<speak>" + speech_output + "</speak>"
@@ -121,3 +125,21 @@ def cleanssml(ssml):
     cleanr = re.compile('<.*?>')
     cleantext = re.sub(cleanr, '', ssml)
     return cleantext
+
+# HTML
+def webcall():
+    # setup urllib3 and http  
+    urllib3.disable_warnings()
+    http = urllib3.PoolManager()
+    # make call and load url details into a python object
+    webUrl = http.request('GET', 'https://www.twtd.co.uk')
+    # test status code / 200 == successful call i.e. if the website is down, don't knock over the code
+    if webUrl.status == 200:
+        # read date into python object
+        webHTML = webUrl.data
+        # print data
+        # print(webHTML)
+        bsObj = BeautifulSoup(webHTML, "html.parser")
+        mainContent = bsObj.findAll(id='maincontent')
+        
+        return mainContent[0].get_text()
